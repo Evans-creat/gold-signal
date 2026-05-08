@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+
+
+.      <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -918,17 +920,20 @@ Réponds UNIQUEMENT avec un JSON valide (sans backticks, sans texte avant ou apr
 Prix cohérents avec $${price}. Signal BUY/SELL seulement si score_global >= 6.`;
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const groqKey = document.getElementById('groq-key').value.trim();
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user', content:prompt}]
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'user',content:prompt}],
+        max_tokens:800,
+        temperature:0.3
       })
     });
     const data = await resp.json();
-    const raw  = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    if(data.error){throw new Error(data.error.message);}
+    const raw=(data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
     const r    = JSON.parse(raw);
     renderResult(r, price);
   } catch(e) {
@@ -1078,3 +1083,9 @@ document.getElementById('bottom-cta').style.display = 'none';
 </script>
 </body>
 </html>
+
+
+      
+
+.
+  
