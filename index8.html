@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GOLD × TG</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-light: #F0D080;
+  --gold-dim: rgba(201,168,76,0.12);
+  --tg: #29B6F6;
+  --bg: #09090B;
+  --surface: #111115;
+  --surface2: #18181D;
+  --border: rgba(255,255,255,0.07);
+  --text: #EDE5D5;
+  --muted: #52526A;
+  --green: #4CAF82;
+  --red: #E05555;
+  --orange: #E09040;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+}
+
+/* ── APP SHELL ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.topbar-title .g { color: var(--gold); }
+.topbar-title .x { color: var(--muted); margin: 0 3px; font-weight: 600; }
+.topbar-title .t { color: var(--tg); }
+
+.tg-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s ease infinite; }
+
+/* ── TABS ── */
+.tabs {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 11px 4px;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.tab .tab-icon { font-size: 14px; display: block; margin-bottom: 3px; }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── CONTENT ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page {
+  display: none;
+  padding: 18px 16px 100px;
+  animation: fadeUp 0.25s ease;
+}
+
+.page.active { display: block; }
+
+/* ── SECTION HEADER ── */
+.sec-head {
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 20px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201,168,76,0.3), transparent);
+}
+.sec-head:first-child { margin-top: 0; }
+
+/* ── INPUT FIELD ── */
+.field {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.field:focus-within { border-color: rgba(201,168,76,0.45); }
+
+.field label {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+
+.field input, .field select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  padding: 5px 0;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus { border-bottom-color: var(--gold); }
+.field input::placeholder { color: var(--muted); }
+.field select option { background: #111; color: var(--text); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-gold { background: var(--gold); color: #000; font-weight: 500; }
+.btn-gold:active { background: var(--gold-light); }
+.btn-gold:disabled { background: var(--muted); color: #333; cursor: not-allowed; }
+
+.btn-tg { background: var(--tg); color: #000; font-weight: 500; }
+.btn-tg:active { opacity: 0.8; }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+}
+.btn-outline:active { background: var(--gold-dim); }
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(224,85,85,0.3);
+  color: var(--red);
+}
+
+.btn + .btn { margin-top: 8px; }
+
+/* ── RESULT CARD ── */
+.signal-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  padding: 20px 16px 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.signal-word {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.signal-word.BUY { color: var(--green); }
+.signal-word.SELL { color: var(--red); }
+.signal-word.WAIT { color: var(--orange); }
+
+.signal-biais {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.scores-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-top: 4px;
+}
+.score-cell {
+  background: var(--surface2);
+  padding: 10px 6px;
+  text-align: center;
+}
+.score-cell .sv {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.score-cell.global .sv { color: var(--gold); font-size: 22px; }
+.score-cell .sl {
+  font-size: 7px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── LEVELS TABLE ── */
+.levels-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.levels-card-head {
+  background: var(--surface2);
+  padding: 9px 14px;
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-bottom: 1px solid var(--border);
+}
+
+.level-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.level-row:last-child { border-bottom: none; }
+
+.lbl { color: var(--muted); font-size: 10px; }
+.lval { font-weight: 500; }
+.lval.g { color: var(--green); }
+.lval.r { color: var(--red); }
+.lval.gold { color: var(--gold-light); }
+
+/* ── ANALYSIS BOX ── */
+.analysis-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold);
+  padding: 14px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  line-height: 1.75;
+  color: rgba(237,229,213,0.85);
+}
+.analysis-box .ab-title {
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+/* ── HISTORY ── */
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  animation: slideIn 0.25s ease;
+}
+.history-item.buy { border-left-color: var(--green); }
+.history-item.sell { border-left-color: var(--red); }
+.history-item.wait { border-left-color: var(--orange); }
+
+.hi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.hi-signal { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.hi-signal.buy { color: var(--green); }
+.hi-signal.sell { color: var(--red); }
+.hi-signal.wait { color: var(--orange); }
+.hi-score { font-size: 11px; color: var(--gold-light); }
+.hi-meta { font-size: 10px; color: var(--muted); }
+
+/* ── LOADER ── */
+.loader-screen {
+  display: none;
+  padding: 50px 20px;
+  text-align: center;
+}
+.loader-screen.active { display: block; }
+
+.spinner {
+  width: 40px; height: 40px;
+  border: 2px solid var(--gold-dim);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.loader-label {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.step-list { text-align: left; max-width: 260px; margin: 0 auto; }
+.step { font-size: 10px; color: var(--muted); padding: 4px 0; opacity: 0; animation: appear 0.3s ease forwards; }
+
+/* ── BOTTOM CTA (fixed) ── */
+.bottom-cta {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+  padding: 16px 16px 20px;
+  z-index: 100;
+}
+
+/* ── TOAST ── */
+.toast-wrap {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 90%;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 10px 18px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
+  width: 100%;
+  animation: toastIn 0.25s ease;
+}
+.toast.ok { background: var(--green); color: #000; }
+.toast.err { background: var(--red); color: #fff; }
+.toast.info { background: var(--tg); color: #000; }
+
+/* ── GUIDE STEPS ── */
+.guide-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.gs-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gold);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 28px;
+}
+.gs-body {}
+.gs-title { font-size: 11px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+.gs-text { font-size: 10px; line-height: 1.65; color: var(--muted); }
+.gs-text span { color: var(--tg); }
+
+/* ── ANIMATIONS ── */
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.35} }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn { from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)} }
+@keyframes appear { to{opacity:1} }
+@keyframes toastIn { from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-title">
+      <span class="g">GOLD</span><span class="x">×</span><span class="t">TG</span>
+    </div>
+    <div class="tg-indicator">
+      <div class="dot" id="tg-dot"></div>
+      <span id="tg-label">Hors ligne</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="goTab(0)">
+      <span class="tab-icon">⚙️</span>Config
+    </div>
+    <div class="tab" onclick="goTab(1)">
+      <span class="tab-icon">📊</span>Données
+    </div>
+    <div class="tab" onclick="goTab(2)">
+      <span class="tab-icon">🎯</span>Signal
+    </div>
+    <div class="tab" onclick="goTab(3)">
+      <span class="tab-icon">🕐</span>Historique
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══ TAB 0 : CONFIG ══ -->
+    <div class="page active" id="page-0">
+
+      <div class="sec-head">Telegram Bot</div>
+
+      <div class="field">
+        <label>🤖 Bot Token</label>
+        <input type="password" id="bot-token" placeholder="123456:ABC-DEFxyz..." autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label>💬 Chat ID</label>
+        <input type="text" id="chat-id" placeholder="-1001234567890 ou @moncanal" />
+      </div>
+
+      <button class="btn btn-tg" onclick="testTelegram()">▶ Tester la connexion</button>
+
+      <div class="sec-head" style="margin-top:24px;">Guide de configuration</div>
+
+      <div class="guide-step">
+        <div class="gs-num">1</div>
+        <div class="gs-body">
+          <div class="gs-title">Crée ton Bot</div>
+          <div class="gs-text">Ouvre Telegram → cherche <span>@BotFather</span> → envoie <span>/newbot</span> → suis les instructions → copie le Token reçu</div>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="gs-num">2</div>
+        <div class="gs-body">
+          <div class="gs-title">Trouve ton Chat ID</div>
+          <div class="gs-text">Cherche <span>@userinfobot</span> sur Telegram → envoie n'importe quel message → il te répond avec ton ID</div>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="gs-num">3</div>
+        <div class="gs-body">
+          <div class="gs-title">Pour un canal ou groupe</div>
+          <div class="gs-text">Ajoute ton bot comme admin → le Chat ID commence par <span>-100</span> suivi des chiffres du canal</div>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="gs-num">4</div>
+        <div class="gs-body">
+          <div class="gs-title">Teste la connexion</div>
+          <div class="gs-text">Clique "Tester la connexion" ci-dessus. Si tout est bon, tu reçois un message de confirmation sur Telegram ✅</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB 1 : DONNÉES ══ -->
+    <div class="page" id="page-1">
+
+      <div class="sec-head">Marché — Obligatoires</div>
+
+      <div class="field">
+        <label>💰 Prix Gold XAU/USD ($)</label>
+        <input type="number" id="price" placeholder="3200.50" step="0.01" />
+      </div>
+
+      <div class="field">
+        <label>🕐 Session Active</label>
+        <select id="session">
+          <option value="">— Sélectionne —</option>
+          <option>Asia</option>
+          <option>London</option>
+          <option>New York</option>
+          <option>London / NY Overlap</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>📉 DXY Dollar Index</label>
+        <input type="number" id="dxy" placeholder="104.20" step="0.01" />
+      </div>
+
+      <div class="field">
+        <label>📊 Taux US 10Y (%)</label>
+        <input type="number" id="yield10y" placeholder="4.35" step="0.01" />
+      </div>
+
+      <div class="field">
+        <label>🔢 Taux Réels TIPS 10Y (%)</label>
+        <input type="number" id="real-rates" placeholder="2.10" step="0.01" />
+      </div>
+
+      <div class="field">
+        <label>⚡ Volatilité GVZ</label>
+        <input type="number" id="gvz" placeholder="15.40" step="0.01" />
+      </div>
+
+      <div class="sec-head">Fondamentaux Macro</div>
+
+      <div class="field">
+        <label>🏦 Positionnement Fed</label>
+        <select id="fed-stance">
+          <option value="">— Sélectionne —</option>
+          <option>Très Hawkish</option>
+          <option>Hawkish</option>
+          <option>Neutre</option>
+          <option>Dovish</option>
+          <option>Très Dovish</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>📈 CPI YoY (%)</label>
+        <input type="number" id="cpi" placeholder="3.4" step="0.1" />
+      </div>
+
+      <div class="field">
+        <label>💼 NFP (milliers d'emplois)</label>
+        <input type="number" id="nfp" placeholder="175" step="1" />
+      </div>
+
+      <div class="field">
+        <label>📋 COT — Managed Money</label>
+        <select id="cot">
+          <option value="">— Sélectionne —</option>
+          <option>Très long (extrême haussier)</option>
+          <option>Long net</option>
+          <option>Neutre</option>
+          <option>Short net</option>
+          <option>Très short (extrême baissier)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>🏅 ETF GLD Flows (7 jours)</label>
+        <select id="etf-flows">
+          <option value="">— Sélectionne —</option>
+          <option>Entrées massives (+10t)</option>
+          <option>Entrées modérées</option>
+          <option>Neutre</option>
+          <option>Sorties modérées</option>
+          <option>Sorties massives (-10t)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>🌍 Géopolitique</label>
+        <select id="geo">
+          <option value="">— Sélectionne —</option>
+          <option>Crise majeure active</option>
+          <option>Tensions élevées</option>
+          <option>Tensions modérées</option>
+          <option>Calme</option>
+        </select>
+      </div>
+
+      <div class="sec-head">Structure Technique</div>
+
+      <div class="field">
+        <label>📅 Tendance Hebdomadaire</label>
+        <select id="trend-weekly">
+          <option value="">— Sélectionne —</option>
+          <option>Uptrend fort (HH + HL)</option>
+          <option>Uptrend faible</option>
+          <option>Range / Consolidation</option>
+          <option>Downtrend faible</option>
+          <option>Downtrend fort (LL + LH)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>📉 RSI(14) Journalier</label>
+        <input type="number" id="rsi" placeholder="58" min="0" max="100" />
+      </div>
+
+      <div class="field">
+        <label>📏 Position vs EMA 200 Daily</label>
+        <select id="ema200">
+          <option value="">— Sélectionne —</option>
+          <option>Prix largement au-dessus</option>
+          <option>Prix légèrement au-dessus</option>
+          <option>Prix sur l'EMA200</option>
+          <option>Prix légèrement en-dessous</option>
+          <option>Prix largement en-dessous</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>🔀 Structure H4</label>
+        <select id="h4-structure">
+          <option value="">— Sélectionne —</option>
+          <option>BOS haussier récent</option>
+          <option>CHoCH haussier</option>
+          <option>Range H4</option>
+          <option>CHoCH baissier</option>
+          <option>BOS baissier récent</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>🟢 Support Clé ($)</label>
+        <input type="number" id="support" placeholder="3150" step="1" />
+      </div>
+
+      <div class="field">
+        <label>🔴 Résistance Clé ($)</label>
+        <input type="number" id="resistance" placeholder="3280" step="1" />
+      </div>
+
+      <div style="height: 80px;"></div>
+    </div>
+
+    <!-- ══ TAB 2 : SIGNAL ══ -->
+    <div class="page" id="page-2">
+
+      <!-- LOADER -->
+      <div class="loader-screen" id="loader">
+        <div class="spinner"></div>
+        <div class="loader-label">Analyse Claude AI en cours</div>
+        <div class="step-list" id="step-list"></div>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div id="empty-state" style="text-align:center; padding:60px 20px;">
+        <div style="font-size:40px; margin-bottom:16px;">🥇</div>
+        <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:700; margin-bottom:8px;">Prêt à analyser</div>
+        <div style="font-size:11px; color:var(--muted); line-height:1.7;">Remplis les données dans l'onglet<br><span style="color:var(--gold)">📊 Données</span> puis clique sur<br><span style="color:var(--gold)">Générer le signal</span></div>
+      </div>
+
+      <!-- RESULT (hidden until generated) -->
+      <div id="result-area" style="display:none;">
+
+        <div class="signal-hero">
+          <div class="signal-word" id="sig-word">—</div>
+          <div class="signal-biais" id="sig-biais">—</div>
+          <div class="scores-row">
+            <div class="score-cell">
+              <div class="sv" id="sc-tech">—</div>
+              <div class="sl">Tech</div>
+            </div>
+            <div class="score-cell">
+              <div class="sv" id="sc-fund">—</div>
+              <div class="sl">Fond.</div>
+            </div>
+            <div class="score-cell">
+              <div class="sv" id="sc-sent">—</div>
+              <div class="sl">Sent.</div>
+            </div>
+            <div class="score-cell global">
+              <div class="sv" id="sc-global">—</div>
+              <div class="sl">Global</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="levels-card">
+          <div class="levels-card-head">📍 Zones d'entrée</div>
+          <div id="entry-levels"></div>
+        </div>
+
+        <div class="levels-card">
+          <div class="levels-card-head">🛡️ Stop Loss</div>
+          <div id="sl-levels"></div>
+        </div>
+
+        <div class="levels-card">
+          <div class="levels-card-head">🚀 Objectifs (TP)</div>
+          <div id="tp-levels"></div>
+        </div>
+
+        <div class="analysis-box">
+          <div class="ab-title">📈 Analyse Technique</div>
+          <div id="tech-text">—</div>
+        </div>
+
+        <div class="analysis-box">
+          <div class="ab-title">🌍 Analyse Fondamentale</div>
+          <div id="fund-text">—</div>
+        </div>
+
+        <div class="analysis-box" style="border-left-color:var(--red);">
+          <div class="ab-title" style="color:var(--red);">⚠️ Invalidation</div>
+          <div id="inval-text">—</div>
+        </div>
+
+        <div class="analysis-box" style="border-left-color:var(--tg);">
+          <div class="ab-title" style="color:var(--tg);">💡 Note du Trader</div>
+          <div id="note-text">—</div>
+        </div>
+
+        <button class="btn btn-tg" onclick="sendToTelegram()" style="margin-bottom:8px;">✈ Envoyer sur Telegram</button>
+        <button class="btn btn-outline" onclick="copyReport()">📋 Copier le rapport</button>
+
+        <div style="height:90px;"></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB 3 : HISTORIQUE ══ -->
+    <div class="page" id="page-3">
+      <div class="sec-head">Signaux générés</div>
+      <div id="history-list">
+        <div style="text-align:center; padding:50px 20px; color:var(--muted); font-size:11px;">
+          Aucun signal pour l'instant
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <!-- BOTTOM CTA (only on tab 1) -->
+  <div class="bottom-cta" id="bottom-cta">
+    <button class="btn btn-gold" id="gen-btn" onclick="generateSignal()">
+      ⬡ GÉNÉRER LE SIGNAL
+    </button>
+  </div>
+
+</div><!-- end app -->
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ── STATE ── */
+let currentTab = 0;
+let currentReport = '';
+let signalCount = 0;
+let tgOk = false;
+
+/* ── TABS ── */
+function goTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.getElementById('bottom-cta').style.display = (n === 1) ? 'block' : 'none';
+  currentTab = n;
+}
+
+/* ── TELEGRAM TEST ── */
+async function testTelegram() {
+  const token = document.getElementById('bot-token').value.trim();
+  const chatId = document.getElementById('chat-id').value.trim();
+  if (!token || !chatId) { toast('Remplis le Token et le Chat ID', 'err'); return; }
+  toast('Test en cours…', 'info');
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: '✅ *GOLD × TG — Connexion réussie !*\n\nTon bot est prêt à recevoir les signaux Gold XAU/USD 🥇\n\n_Génère ton premier signal depuis l\'app !_',
+        parse_mode: 'Markdown'
+      })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      tgOk = true;
+      document.getElementById('tg-dot').classList.add('on');
+      document.getElementById('tg-label').textContent = 'Connecté';
+      toast('✅ Telegram connecté !', 'ok');
+    } else {
+      toast('Erreur : ' + (d.description || 'Token invalide'), 'err');
+    }
+  } catch(e) { toast('Erreur réseau', 'err'); }
+}
+
+/* ── GENERATE SIGNAL ── */
+async function generateSignal() {
+  const price    = document.getElementById('price').value;
+  const session  = document.getElementById('session').value;
+  const dxy      = document.getElementById('dxy').value;
+  const y10      = document.getElementById('yield10y').value;
+  const real     = document.getElementById('real-rates').value;
+  const gvz      = document.getElementById('gvz').value;
+  const fed      = document.getElementById('fed-stance').value;
+  const cpi      = document.getElementById('cpi').value;
+  const nfp      = document.getElementById('nfp').value;
+  const cot      = document.getElementById('cot').value;
+  const etf      = document.getElementById('etf-flows').value;
+  const geo      = document.getElementById('geo').value;
+  const trend    = document.getElementById('trend-weekly').value;
+  const rsi      = document.getElementById('rsi').value;
+  const ema      = document.getElementById('ema200').value;
+  const h4       = document.getElementById('h4-structure').value;
+  const sup      = document.getElementById('support').value;
+  const res      = document.getElementById('resistance').value;
+
+  if (!price || !session || !dxy) {
+    toast('Remplis au minimum : Prix, Session, DXY', 'err');
+    return;
+  }
+
+  // Switch to signal tab
+  goTab(2);
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('loader').classList.add('active');
+  document.getElementById('gen-btn').disabled = true;
+
+  // Animated steps
+  const steps = ['Chargement données marché…', 'Analyse technique MTF…', 'Évaluation macro fondamentale…', 'Calcul niveaux prix…', 'Génération signal final…'];
+  const sl = document.getElementById('step-list');
+  sl.innerHTML = '';
+  steps.forEach((s,i) => {
+    const el = document.createElement('div');
+    el.className = 'step';
+    el.textContent = '› ' + s;
+    el.style.animationDelay = (i*0.7)+'s';
+    sl.appendChild(el);
+  });
+
+  const prompt = `Tu es un analyste quantitatif senior sur Gold/XAU/USD. Analyse ces données de marché et génère un signal de trading complet.
+
+DONNÉES MARCHÉ :
+Prix Gold XAU/USD : $${price}
+Session : ${session}
+DXY : ${dxy}
+Taux US 10Y : ${y10}%
+Taux réels TIPS 10Y : ${real}%
+GVZ (volatilité) : ${gvz}
+Fed : ${fed}
+CPI YoY : ${cpi}%
+NFP : ${nfp}K
+COT Managed Money : ${cot}
+ETF GLD Flows 7j : ${etf}
+Géopolitique : ${geo}
+Tendance hebdo : ${trend}
+RSI(14) daily : ${rsi}
+vs EMA200 : ${ema}
+Structure H4 : ${h4}
+Support clé : $${sup}
+Résistance clé : $${res}
+
+Réponds UNIQUEMENT avec un JSON valide (sans backticks, sans texte avant ou après) :
+{"signal":"BUY|SELL|WAIT","biais":"HAUSSIER|BAISSIER|NEUTRE","entry_low":number,"entry_high":number,"entry_agg":number,"entry_cons":number,"sl_scalp":number,"sl_swing":number,"sl_pos":number,"tp1":number,"tp2":number,"tp3":number,"rr1":"X:X","rr2":"X:X","rr3":"X:X","tech":"analyse technique 3-4 lignes","fund":"analyse fondamentale 3-4 lignes","invalidation":number,"note":"conseil court","score_tech":number(1-10),"score_fund":number(1-10),"score_sent":number(1-10),"score_global":number(1-10),"horizon":"SCALP|INTRADAY|SWING|POSITION"}
+
+Prix cohérents avec $${price}. Signal BUY/SELL seulement si score_global >= 6.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user', content:prompt}]
+      })
+    });
+    const data = await resp.json();
+    const raw  = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const r    = JSON.parse(raw);
+    renderResult(r, price);
+  } catch(e) {
+    toast('Erreur API : ' + e.message, 'err');
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('loader').classList.remove('active');
+  } finally {
+    document.getElementById('gen-btn').disabled = false;
+  }
+}
+
+/* ── RENDER RESULT ── */
+function renderResult(r, price) {
+  document.getElementById('loader').classList.remove('active');
+  document.getElementById('result-area').style.display = 'block';
+
+  const sw = document.getElementById('sig-word');
+  sw.textContent = (r.signal==='BUY'?'▲ ':r.signal==='SELL'?'▼ ':'◆ ') + r.signal;
+  sw.className = 'signal-word ' + r.signal;
+
+  document.getElementById('sig-biais').textContent = r.biais + ' · ' + r.horizon;
+  document.getElementById('sc-tech').textContent   = r.score_tech;
+  document.getElementById('sc-fund').textContent   = r.score_fund;
+  document.getElementById('sc-sent').textContent   = r.score_sent || r.score_sentiment || '—';
+  document.getElementById('sc-global').textContent = r.score_global;
+
+  document.getElementById('entry-levels').innerHTML = `
+    <div class="level-row"><span class="lbl">Zone optimale</span><span class="lval gold">$${r.entry_low} — $${r.entry_high}</span></div>
+    <div class="level-row"><span class="lbl">Agressive</span><span class="lval">$${r.entry_agg}</span></div>
+    <div class="level-row"><span class="lbl">Conservative</span><span class="lval">$${r.entry_cons}</span></div>`;
+
+  document.getElementById('sl-levels').innerHTML = `
+    <div class="level-row"><span class="lbl">Scalp</span><span class="lval r">$${r.sl_scalp}</span></div>
+    <div class="level-row"><span class="lbl">Swing</span><span class="lval r">$${r.sl_swing}</span></div>
+    <div class="level-row"><span class="lbl">Position</span><span class="lval r">$${r.sl_pos}</span></div>`;
+
+  document.getElementById('tp-levels').innerHTML = `
+    <div class="level-row"><span class="lbl">TP1 · 50% · RR ${r.rr1}</span><span class="lval g">$${r.tp1}</span></div>
+    <div class="level-row"><span class="lbl">TP2 · 30% · RR ${r.rr2}</span><span class="lval g">$${r.tp2}</span></div>
+    <div class="level-row"><span class="lbl">TP3 · 20% · RR ${r.rr3}</span><span class="lval g">$${r.tp3}</span></div>`;
+
+  document.getElementById('tech-text').textContent  = r.tech;
+  document.getElementById('fund-text').textContent  = r.fund;
+  document.getElementById('inval-text').textContent = `Signal invalidé si clôture H4 sous/dessus $${r.invalidation}`;
+  document.getElementById('note-text').textContent  = r.note;
+
+  const now = new Date().toLocaleString('fr-FR');
+  currentReport = buildMsg(r, price, now);
+
+  addToHistory(r, price, now);
+  signalCount++;
+  toast(`Signal ${r.signal} · Score ${r.score_global}/10`, r.signal==='BUY'?'ok':r.signal==='SELL'?'err':'info');
+}
+
+/* ── TELEGRAM MESSAGE ── */
+function buildMsg(r, price, time) {
+  const em = r.signal==='BUY'?'🟢':r.signal==='SELL'?'🔴':'🟡';
+  return `${em} *GOLD SIGNAL — ${r.signal}* ${em}
+━━━━━━━━━━━━━━━━━
+💰 Prix : $${price} | ${r.biais}
+🕐 Horizon : ${r.horizon}
+
+📍 *ENTRÉE*
+• Zone : $${r.entry_low} — $${r.entry_high}
+• Agressive : $${r.entry_agg}
+• Conservative : $${r.entry_cons}
+
+🛡️ *STOP LOSS*
+• Scalp : $${r.sl_scalp}
+• Swing : $${r.sl_swing}
+• Position : $${r.sl_pos}
+
+🚀 *OBJECTIFS*
+• TP1 (50%) $${r.tp1} → RR ${r.rr1}
+• TP2 (30%) $${r.tp2} → RR ${r.rr2}
+• TP3 (20%) $${r.tp3} → RR ${r.rr3}
+
+━━━━━━━━━━━━━━━━━
+📈 *Technique :* ${r.tech}
+
+🌍 *Fondamentale :* ${r.fund}
+
+━━━━━━━━━━━━━━━━━
+⚠️ *Invalidation :* $${r.invalidation}
+💡 *Note :* ${r.note}
+
+📊 Scores — Tech: ${r.score_tech} | Fond: ${r.score_fund} | Sent: ${r.score_sent||r.score_sentiment} | *Global: ${r.score_global}/10*
+
+_${time} · Pas un conseil en investissement_`;
+}
+
+/* ── SEND TO TELEGRAM ── */
+async function sendToTelegram() {
+  const token  = document.getElementById('bot-token').value.trim();
+  const chatId = document.getElementById('chat-id').value.trim();
+  if (!token || !chatId) { toast('Configure d\'abord Telegram (onglet ⚙️)', 'err'); return; }
+  if (!currentReport)   { toast('Génère d\'abord un signal', 'err'); return; }
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id:chatId, text:currentReport, parse_mode:'Markdown' })
+    });
+    const d = await r.json();
+    if (d.ok) { toast('✅ Envoyé sur Telegram !', 'ok'); }
+    else       { toast('Erreur : ' + d.description, 'err'); }
+  } catch(e) { toast('Erreur réseau', 'err'); }
+}
+
+/* ── COPY ── */
+function copyReport() {
+  if (!currentReport) { toast('Génère d\'abord un signal', 'err'); return; }
+  navigator.clipboard.writeText(currentReport);
+  toast('Rapport copié !', 'ok');
+}
+
+/* ── HISTORY ── */
+function addToHistory(r, price, time) {
+  const list = document.getElementById('history-list');
+  const empty = list.querySelector('[style]');
+  if (empty) empty.remove();
+
+  const el = document.createElement('div');
+  const sig = r.signal.toLowerCase();
+  el.className = `history-item ${sig}`;
+  el.innerHTML = `
+    <div class="hi-top">
+      <span class="hi-signal ${sig}">${r.signal==='BUY'?'▲':r.signal==='SELL'?'▼':'◆'} ${r.signal}</span>
+      <span class="hi-score">${r.score_global}/10</span>
+    </div>
+    <div class="hi-meta">$${price} · ${r.horizon} · ${time.split(',')[1]?.trim()||time}</div>`;
+  list.insertBefore(el, list.firstChild);
+}
+
+/* ── TOAST ── */
+function toast(msg, type='info') {
+  const wrap = document.getElementById('toasts');
+  const el   = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// Init: hide bottom CTA on non-data tabs
+document.getElementById('bottom-cta').style.display = 'none';
+</script>
+</body>
+</html>
