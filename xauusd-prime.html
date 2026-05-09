@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>XAUUSD PRIME — Hedge Fund AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#FFD700;--gold2:#FFA500;--gold3:rgba(255,215,0,0.15);
+  --green:#00FF88;--red:#FF3355;--blue:#00CFFF;--purple:#BB86FC;
+  --bg:#050507;--s1:#0A0A0F;--s2:#0F0F18;--s3:#141420;
+  --border:rgba(255,215,0,0.12);--text:#E8E0D0;--muted:#666680;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden;}
+
+/* SCANLINES */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9998;}
+
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:500px;margin:0 auto;position:relative;}
+
+/* TOP BAR */
+.topbar{flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scanLine 3s ease-in-out infinite;}
+.brand{display:flex;align-items:center;gap:8px;}
+.brand-name{font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:0.1em;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.5);}
+.brand-sub{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.2em;}
+.status-bar{display:flex;align-items:center;gap:8px;}
+.status-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.15em;color:var(--muted);}
+.status-pill.active{border-color:rgba(0,255,136,0.4);color:var(--green);}
+.pulse-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);}
+.pulse-dot.live{background:var(--green);animation:pulse 1.5s ease infinite;box-shadow:0 0 6px var(--green);}
+
+/* PRICE TICKER */
+.ticker{flex-shrink:0;background:var(--s2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;}
+.ticker-price{font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:0.05em;color:var(--gold);text-shadow:0 0 15px rgba(255,215,0,0.4);}
+.ticker-change{font-family:'Share Tech Mono',monospace;font-size:10px;}
+.ticker-change.up{color:var(--green);}
+.ticker-change.down{color:var(--red);}
+.ticker-meta{display:flex;gap:12px;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);}
+.ticker-meta span{display:flex;flex-direction:column;align-items:flex-end;}
+.ticker-meta .val{color:var(--text);font-size:9px;}
+
+/* TABS */
+.tabs{flex-shrink:0;display:grid;grid-template-columns:repeat(5,1fr);background:var(--s1);border-bottom:1px solid var(--border);}
+.tab{padding:9px 2px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+.tab .ti{font-size:13px;display:block;margin-bottom:2px;}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.page{display:none;padding:14px 14px 90px;animation:fadeUp 0.2s ease;}
+.page.active{display:block;}
+
+/* SECTION */
+.sec{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin:16px 0 10px;display:flex;align-items:center;gap:8px;}
+.sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,215,0,0.3),transparent);}
+.sec:first-child{margin-top:0;}
+
+/* FIELD */
+.field{background:var(--s1);border:1px solid var(--border);padding:11px 13px;margin-bottom:7px;transition:border-color 0.2s;}
+.field:focus-within{border-color:rgba(255,215,0,0.4);}
+.field label{display:block;font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.field input,.field select{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.06);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:14px;padding:4px 0;outline:none;-webkit-appearance:none;transition:border-color 0.2s;}
+.field input:focus,.field select:focus{border-bottom-color:var(--gold);}
+.field input::placeholder{color:var(--muted);}
+.field select option{background:#0A0A0F;color:var(--text);}
+
+/* CONFIRMATIONS GRID */
+.confirm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.confirm-item{background:var(--s1);border:1px solid var(--border);padding:10px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all 0.2s;}
+.confirm-item.checked{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.05);}
+.confirm-check{width:14px;height:14px;border:1px solid var(--muted);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all 0.2s;}
+.confirm-item.checked .confirm-check{background:var(--green);border-color:var(--green);color:#000;}
+.confirm-label{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.05em;color:var(--muted);line-height:1.4;}
+.confirm-item.checked .confirm-label{color:var(--text);}
+
+/* CONFIRM COUNTER */
+.confirm-counter{background:var(--s2);border:1px solid var(--border);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.cc-label{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;}
+.cc-val{font-family:'Bebas Neue',cursive;font-size:24px;color:var(--muted);}
+.cc-val.ready{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,0.4);}
+.cc-bar{flex:1;height:4px;background:rgba(255,255,255,0.05);margin:0 12px;position:relative;overflow:hidden;}
+.cc-fill{height:100%;background:var(--gold);transition:width 0.3s ease;}
+.cc-fill.ready{background:var(--green);}
+
+/* BUTTONS */
+.btn{display:block;width:100%;padding:13px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:0.25em;text-transform:uppercase;text-align:center;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-gold{background:var(--gold);color:#000;font-weight:600;position:relative;overflow:hidden;}
+.btn-gold::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);transition:left 0.4s;}
+.btn-gold:hover::before{left:100%;}
+.btn-gold:disabled{background:var(--muted);cursor:not-allowed;}
+.btn-tg{background:linear-gradient(135deg,#0088cc,#00CFFF);color:#000;font-weight:600;}
+.btn-red{background:var(--red);color:#fff;font-weight:600;}
+.btn-outline{background:transparent;border:1px solid rgba(255,215,0,0.3);color:var(--gold);}
+.btn+.btn{margin-top:7px;}
+
+/* SIGNAL RESULT */
+.signal-hero{background:var(--s1);border:1px solid var(--border);border-top:2px solid var(--gold);padding:16px;margin-bottom:10px;position:relative;overflow:hidden;}
+.signal-hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at top,rgba(255,215,0,0.03),transparent 70%);pointer-events:none;}
+.sh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sh-signal{font-family:'Bebas Neue',cursive;font-size:42px;letter-spacing:0.05em;line-height:1;}
+.sh-signal.BUY{color:var(--green);text-shadow:0 0 20px rgba(0,255,136,0.4);}
+.sh-signal.SELL{color:var(--red);text-shadow:0 0 20px rgba(255,51,85,0.4);}
+.sh-signal.WAIT{color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.4);}
+.sh-conf{text-align:right;}
+.sh-conf-val{font-family:'Bebas Neue',cursive;font-size:32px;color:var(--blue);}
+.sh-conf-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.15em;}
+.sh-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.sh-tag{padding:3px 10px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.1em;border:1px solid var(--border);color:var(--muted);}
+.sh-tag.hl{border-color:rgba(0,207,255,0.4);color:var(--blue);}
+
+/* SCORES */
+.scores-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:10px;}
+.sc{background:var(--s2);padding:10px 6px;text-align:center;}
+.sc .sv{font-family:'Bebas Neue',cursive;font-size:20px;color:var(--gold-light);line-height:1;}
+.sc.global .sv{font-size:26px;color:var(--gold);}
+.sc .sl{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-top:3px;}
+
+/* LEVELS */
+.levels-block{background:var(--s1);border:1px solid var(--border);margin-bottom:8px;overflow:hidden;}
+.lb-head{background:var(--s2);padding:8px 13px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.lb-head.buy{color:var(--green);}
+.lb-head.sell{color:var(--red);}
+.lb-head.neutral{color:var(--gold);}
+.lrow{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:11px;}
+.lrow:last-child{border-bottom:none;}
+.ll{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);}
+.lv{font-family:'Share Tech Mono',monospace;font-weight:500;}
+.lv.g{color:var(--green);}
+.lv.r{color:var(--red);}
+.lv.gold{color:var(--gold);}
+.lv.b{color:var(--blue);}
+
+/* ANALYSIS */
+.abox{background:var(--s1);border:1px solid var(--border);border-left:2px solid var(--gold);padding:12px 13px;margin-bottom:8px;font-size:11px;line-height:1.7;color:rgba(232,224,208,0.8);}
+.abox-title{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:7px;}
+
+/* RISK CALC */
+.risk-calc{background:var(--s2);border:1px solid var(--border);padding:12px 13px;margin-bottom:8px;}
+.rc-title{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+.rc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rc-item{background:var(--s1);padding:8px;border:1px solid var(--border);}
+.rc-label{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.1em;margin-bottom:4px;}
+.rc-val{font-family:'Bebas Neue',cursive;font-size:18px;color:var(--text);}
+.rc-val.green{color:var(--green);}
+.rc-val.orange{color:var(--gold2);}
+
+/* HISTORY */
+.hist-item{background:var(--s1);border:1px solid var(--border);border-left:2px solid var(--muted);padding:11px 13px;margin-bottom:7px;animation:fadeUp 0.2s ease;}
+.hist-item.buy{border-left-color:var(--green);}
+.hist-item.sell{border-left-color:var(--red);}
+.hist-item.wait{border-left-color:var(--gold);}
+.hi-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.hi-sig{font-family:'Bebas Neue',cursive;font-size:16px;}
+.hi-sig.buy{color:var(--green);}
+.hi-sig.sell{color:var(--red);}
+.hi-sig.wait{color:var(--gold);}
+.hi-conf{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);}
+.hi-meta{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);}
+
+/* LOADER */
+.loader-wrap{display:none;padding:40px 20px;text-align:center;}
+.loader-wrap.on{display:block;}
+.loader-ring{width:50px;height:50px;border:2px solid rgba(255,215,0,0.1);border-top:2px solid var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 16px;}
+.loader-txt{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;}
+.loader-steps{text-align:left;max-width:280px;margin:0 auto;}
+.lstep{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);padding:3px 0;opacity:0;animation:appear 0.3s ease forwards;}
+.lstep.done{color:var(--green);}
+.lstep::before{content:'› ';}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:50px 20px;}
+.empty-icon{font-size:48px;margin-bottom:14px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.3));}
+.empty-title{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:0.05em;margin-bottom:6px;color:var(--gold);}
+.empty-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);line-height:1.7;letter-spacing:0.05em;}
+
+/* BOTTOM CTA */
+.bottom-cta{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:linear-gradient(to top,var(--bg) 60%,transparent);padding:14px 14px 18px;z-index:100;display:none;}
+
+/* TOASTS */
+.toast-wrap{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:6px;width:92%;max-width:440px;pointer-events:none;}
+.toast{padding:9px 16px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:0.1em;text-align:center;width:100%;animation:toastIn 0.2s ease;border-left:3px solid transparent;}
+.toast.ok{background:rgba(0,255,136,0.15);border-left-color:var(--green);color:var(--green);}
+.toast.err{background:rgba(255,51,85,0.15);border-left-color:var(--red);color:var(--red);}
+.toast.info{background:rgba(0,207,255,0.15);border-left-color:var(--blue);color:var(--blue);}
+.toast.warn{background:rgba(255,165,0,0.15);border-left-color:var(--gold2);color:var(--gold2);}
+
+/* WARNING BANNER */
+.warn-banner{background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);border-left:3px solid var(--red);padding:10px 13px;margin-bottom:8px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--red);letter-spacing:0.05em;line-height:1.6;display:none;}
+.warn-banner.show{display:block;}
+
+/* INFO BOX */
+.info-box{background:rgba(0,207,255,0.05);border:1px solid rgba(0,207,255,0.2);padding:10px 13px;margin-bottom:8px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);line-height:1.7;}
+
+/* SESSION BADGE */
+.session-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.sess-badge{padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.1em;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.sess-badge.active{border-color:rgba(255,215,0,0.5);color:var(--gold);background:rgba(255,215,0,0.05);}
+.sess-badge.hot{border-color:rgba(255,51,85,0.4);color:var(--red);}
+
+/* AGGRESSIVE MODE */
+.aggr-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--border);padding:12px 13px;margin-bottom:8px;}
+.aggr-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text);letter-spacing:0.1em;}
+.aggr-label small{display:block;color:var(--muted);font-size:7px;margin-top:2px;}
+.toggle{width:40px;height:20px;background:var(--s2);border:1px solid var(--border);border-radius:10px;position:relative;cursor:pointer;transition:all 0.3s;}
+.toggle.on{background:rgba(255,51,85,0.2);border-color:var(--red);}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:var(--muted);border-radius:50%;top:2px;left:2px;transition:all 0.3s;}
+.toggle.on::after{left:22px;background:var(--red);box-shadow:0 0 8px var(--red);}
+
+@keyframes scanLine{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes appear{to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes priceFlash{0%,100%{background:transparent}50%{background:rgba(255,215,0,0.08)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div>
+        <div class="brand-name">XAUUSD PRIME</div>
+        <div class="brand-sub">Hedge Fund AI · v4.0</div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-pill active" id="tg-status-pill">
+        <div class="pulse-dot" id="tg-dot"></div>
+        <span id="tg-label">OFFLINE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker" id="ticker-bar">
+    <div>
+      <div class="ticker-price" id="ticker-price">—</div>
+      <div class="ticker-change" id="ticker-change">XAU/USD</div>
+    </div>
+    <div class="ticker-meta">
+      <span><div class="val" id="t-session">—</div>SESSION</span>
+      <span><div class="val" id="t-rr">—</div>R:R</span>
+      <span><div class="val" id="t-conf">—</div>CONF%</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="goTab(0)"><span class="ti">⚙️</span>CONFIG</div>
+    <div class="tab" onclick="goTab(1)"><span class="ti">📊</span>ANALYSE</div>
+    <div class="tab" onclick="goTab(2)"><span class="ti">🎯</span>SIGNAL</div>
+    <div class="tab" onclick="goTab(3)"><span class="ti">💰</span>RISQUE</div>
+    <div class="tab" onclick="goTab(4)"><span class="ti">🕐</span>JOURNAL</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ TAB 0 : CONFIG ══ -->
+    <div class="page active" id="page-0">
+      <div class="sec">API & Connexions</div>
+
+      <div class="field">
+        <label>🔑 Groq API Key (Gratuit)</label>
+        <input type="password" id="groq-key" placeholder="gsk_..." autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>🤖 Telegram Bot Token</label>
+        <input type="password" id="bot-token" placeholder="123456:ABC-DEF..." autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>💬 Telegram Chat ID</label>
+        <input type="text" id="chat-id" placeholder="8659145987"/>
+      </div>
+      <button class="btn btn-tg" onclick="testTelegram()">▶ TESTER LA CONNEXION</button>
+
+      <div class="sec">Capital & Risque</div>
+      <div class="field">
+        <label>💵 Capital ($)</label>
+        <input type="number" id="capital" placeholder="1000" step="100"/>
+      </div>
+      <div class="field">
+        <label>⚡ Risque par trade (%)</label>
+        <select id="risk-pct">
+          <option value="0.5">0.5% — Ultra conservateur</option>
+          <option value="1" selected>1% — Standard institutionnel</option>
+          <option value="1.5">1.5% — Modéré</option>
+          <option value="2">2% — Agressif</option>
+        </select>
+      </div>
+
+      <div class="sec">Mode de Trading</div>
+      <div class="aggr-toggle">
+        <div class="aggr-label">
+          MODE AGRESSIF
+          <small>Scanner Londres + NY toutes les 30s</small>
+        </div>
+        <div class="toggle" id="aggr-toggle" onclick="toggleAggressive()"></div>
+      </div>
+
+      <div class="field">
+        <label>⏱️ Horizon de trading</label>
+        <select id="horizon-pref">
+          <option value="SCALP">Scalping (M1-M5)</option>
+          <option value="INTRADAY" selected>Intraday (M15-H1)</option>
+          <option value="SWING">Swing (H4-D1)</option>
+        </select>
+      </div>
+
+      <div class="sec">Sécurité</div>
+      <div class="info-box">
+        🛡️ FILTRES ACTIFS :<br>
+        · Blocage avant news rouge (30 min)<br>
+        · Blocage si spread élevé détecté<br>
+        · Blocage si fakeout probable<br>
+        · RR minimum 1:2 obligatoire<br>
+        · 7 confirmations minimum requises
+      </div>
+    </div>
+
+    <!-- ══ TAB 1 : ANALYSE ══ -->
+    <div class="page" id="page-1">
+
+      <div class="sec">Données Marché Live</div>
+      <div class="field"><label>💰 Prix XAU/USD ($)</label><input type="number" id="price" placeholder="3250.00" step="0.01" oninput="updateTicker()"/></div>
+
+      <div class="sec">Session Active</div>
+      <div class="session-row">
+        <div class="sess-badge" onclick="selectSession('Asia')" id="sess-Asia">🌏 ASIA</div>
+        <div class="sess-badge hot" onclick="selectSession('London')" id="sess-London">🇬🇧 LONDON 🔥</div>
+        <div class="sess-badge hot" onclick="selectSession('New York')" id="sess-NewYork">🗽 NEW YORK 🔥</div>
+        <div class="sess-badge hot" onclick="selectSession('Overlap')" id="sess-Overlap">⚡ OVERLAP 🔥</div>
+      </div>
+      <input type="hidden" id="session" value=""/>
+
+      <div class="sec">Smart Money Concepts</div>
+      <div class="confirm-grid">
+        <div class="confirm-item" onclick="toggleConfirm(this,'smc1')"><div class="confirm-check">✓</div><div class="confirm-label">BOS / CHoCH<br>confirmé HTF</div></div>
+        <div class="confirm-item" onclick="toggleConfirm(this,'smc2')"><div class="confirm-check">✓</div><div class="confirm-label">Order Block<br>identifié</div></div>
+        <div class="confirm-item" onclick="toggleConfirm(this,'smc3')"><div class="confirm-check">✓</div><div class="confirm-label">FVG / Imbalance<br>présente</div></div>
+        <div class="confirm-item" onclick="toggleConfirm(this,'smc4')"><div class="confirm-check">✓</div><div class="confirm-label">Liquidity Grab<br>effectué</div></div>
+        <div class="confirm-item" onclick="toggleConfirm(this,'smc5')"><div class="confirm-check">✓</div><div class="confirm-label">Premium /<br>Discount Fib</div></div>
+        <div class="confirm-item" onclick="toggleConfirm(this,'smc6')"><div class="confirm-check">✓</div><div class="confirm-label">MSS confirmé<br>M15+</div></div>
+      </div>
+
+      <div class="sec">Indicateurs Techniques</div>
+      <div class="field"><label>📉 RSI(14) — Timeframe principal</label>
+        <select id="rsi-zone">
+          <option value="">— Sélectionne —</option>
+          <option value="survendu">Survendu &lt;30 (signal haussier)</option>
+          <option value="neutre_bas">30-45 (momentum baissier)</option>
+          <option value="neutre">45-55 (neutre)</option>
+          <option value="neutre_haut">55-70 (momentum haussier)</option>
+          <option value="surachete">Suracheté &gt;70 (signal baissier)</option>
+          <option value="divergence_bull">Divergence haussière</option>
+          <option value="divergence_bear">Divergence baissière</option>
+        </select>
+      </div>
+      <div class="field"><label>📊 MACD</label>
+        <select id="macd">
+          <option value="">— Sélectionne —</option>
+          <option value="cross_bull">Croisement haussier</option>
+          <option value="bull_expand">Expansion haussière</option>
+          <option value="neutre">Neutre / Consolidation</option>
+          <option value="bear_expand">Expansion baissière</option>
+          <option value="cross_bear">Croisement baissier</option>
+        </select>
+      </div>
+      <div class="field"><label>📏 VWAP</label>
+        <select id="vwap">
+          <option value="">— Sélectionne —</option>
+          <option value="above">Prix au-dessus VWAP (haussier)</option>
+          <option value="at">Prix sur VWAP (pivot)</option>
+          <option value="below">Prix en-dessous VWAP (baissier)</option>
+        </select>
+      </div>
+      <div class="field"><label>📐 EMA Stack</label>
+        <select id="ema-stack">
+          <option value="">— Sélectionne —</option>
+          <option value="bull_full">EMA 20 > 50 > 200 (uptrend fort)</option>
+          <option value="bull_partial">Prix > EMA200 (haussier)</option>
+          <option value="mixed">Prix entre EMAs (range)</option>
+          <option value="bear_partial">Prix &lt; EMA200 (baissier)</option>
+          <option value="bear_full">EMA 20 &lt; 50 &lt; 200 (downtrend fort)</option>
+        </select>
+      </div>
+      <div class="field"><label>🌊 ATR(14) Volatilité</label>
+        <select id="atr">
+          <option value="">— Sélectionne —</option>
+          <option value="low">Faible — Breakout potentiel</option>
+          <option value="normal">Normal — Trading optimal</option>
+          <option value="high">Élevé — Réduire taille position</option>
+          <option value="extreme">Extrême — Éviter le marché</option>
+        </select>
+      </div>
+
+      <div class="sec">Niveaux Clés HTF</div>
+      <div class="field"><label>🟢 Support HTF ($)</label><input type="number" id="support" placeholder="3200" step="1"/></div>
+      <div class="field"><label>🔴 Résistance HTF ($)</label><input type="number" id="resistance" placeholder="3350" step="1"/></div>
+      <div class="field"><label>📍 Zone d'entrée visée ($)</label><input type="number" id="entry-zone" placeholder="3220" step="0.5"/></div>
+
+      <div class="sec">Fondamentaux & News</div>
+      <div class="warn-banner" id="news-warn">⚠️ NEWS ROUGE DÉTECTÉE — Signal bloqué jusqu'à 30 min après la publication</div>
+      <div class="field"><label>📰 News imminente (&lt;2h)</label>
+        <select id="news-risk" onchange="checkNewsRisk()">
+          <option value="none">Aucune news importante</option>
+          <option value="yellow">News jaune (faible impact)</option>
+          <option value="orange">News orange (impact modéré)</option>
+          <option value="red">⛔ NEWS ROUGE (FOMC/CPI/NFP)</option>
+        </select>
+      </div>
+      <div class="field"><label>💵 DXY Direction</label>
+        <select id="dxy">
+          <option value="">— Sélectionne —</option>
+          <option value="strong_up">Fort haussier (baissier Gold)</option>
+          <option value="up">Légèrement haussier</option>
+          <option value="flat">Flat / Neutre</option>
+          <option value="down">Légèrement baissier</option>
+          <option value="strong_down">Fort baissier (haussier Gold)</option>
+        </select>
+      </div>
+      <div class="field"><label>🌍 Sentiment Risk</label>
+        <select id="risk-sentiment">
+          <option value="">— Sélectionne —</option>
+          <option value="risk_off">Risk OFF (favorable Gold)</option>
+          <option value="neutre">Neutre</option>
+          <option value="risk_on">Risk ON (défavorable Gold)</option>
+        </select>
+      </div>
+      <div class="field"><label>🏦 Positionnement Fed</label>
+        <select id="fed">
+          <option value="">— Sélectionne —</option>
+          <option value="dovish">Dovish (haussier Gold)</option>
+          <option value="neutre">Neutre</option>
+          <option value="hawkish">Hawkish (baissier Gold)</option>
+        </select>
+      </div>
+
+      <!-- CONFIRMATION COUNTER -->
+      <div class="sec">Score de Confluences</div>
+      <div class="confirm-counter">
+        <div class="cc-label">Confirmations</div>
+        <div class="cc-bar"><div class="cc-fill" id="cc-fill" style="width:0%"></div></div>
+        <div class="cc-val" id="cc-val">0/7</div>
+      </div>
+
+      <div style="height:80px;"></div>
+    </div>
+
+    <!-- ══ TAB 2 : SIGNAL ══ -->
+    <div class="page" id="page-2">
+      <div class="loader-wrap" id="loader">
+        <div class="loader-ring"></div>
+        <div class="loader-txt">IA Hedge Fund en analyse</div>
+        <div class="loader-steps" id="loader-steps"></div>
+      </div>
+
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🥇</div>
+        <div class="empty-title">Prêt à analyser</div>
+        <div class="empty-sub">
+          Remplis les données dans<br>
+          📊 ANALYSE puis génère<br>
+          ton signal institutionnel
+        </div>
+      </div>
+
+      <div id="result-area" style="display:none;">
+        <div class="signal-hero">
+          <div class="sh-top">
+            <div class="sh-signal" id="sh-signal">—</div>
+            <div class="sh-conf">
+              <div class="sh-conf-val" id="sh-conf">—%</div>
+              <div class="sh-conf-label">CONFIANCE</div>
+            </div>
+          </div>
+          <div class="sh-meta" id="sh-meta"></div>
+        </div>
+
+        <div class="scores-grid">
+          <div class="sc"><div class="sv" id="sc-tech">—</div><div class="sl">TECH</div></div>
+          <div class="sc"><div class="sv" id="sc-smc">—</div><div class="sl">SMC</div></div>
+          <div class="sc"><div class="sv" id="sc-fund">—</div><div class="sl">MACRO</div></div>
+          <div class="sc global"><div class="sv" id="sc-global">—</div><div class="sl">GLOBAL</div></div>
+        </div>
+
+        <div class="warn-banner" id="result-warn"></div>
+
+        <div class="levels-block">
+          <div class="lb-head neutral">📍 ZONES D'ENTRÉE</div>
+          <div id="entry-levels"></div>
+        </div>
+
+        <div class="levels-block">
+          <div class="lb-head sell">🛡️ STOP LOSS</div>
+          <div id="sl-levels"></div>
+        </div>
+
+        <div class="levels-block">
+          <div class="lb-head buy">🚀 OBJECTIFS (TP)</div>
+          <div id="tp-levels"></div>
+        </div>
+
+        <div class="abox">
+          <div class="abox-title" style="color:var(--blue);">📈 Analyse Technique & SMC</div>
+          <div id="tech-text">—</div>
+        </div>
+
+        <div class="abox">
+          <div class="abox-title" style="color:var(--purple);">🌍 Analyse Fondamentale</div>
+          <div id="fund-text">—</div>
+        </div>
+
+        <div class="abox" style="border-left-color:var(--red);">
+          <div class="abox-title" style="color:var(--red);">⚠️ Invalidation & Risques</div>
+          <div id="inval-text">—</div>
+        </div>
+
+        <div class="abox" style="border-left-color:var(--green);">
+          <div class="abox-title" style="color:var(--green);">💡 Note Institutionnelle</div>
+          <div id="note-text">—</div>
+        </div>
+
+        <button class="btn btn-tg" onclick="sendToTelegram()" style="margin-bottom:7px;">✈ ENVOYER SUR TELEGRAM</button>
+        <button class="btn btn-outline" onclick="copyReport()">📋 COPIER LE RAPPORT</button>
+        <div style="height:90px;"></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB 3 : RISQUE ══ -->
+    <div class="page" id="page-3">
+      <div class="sec">Calculateur de Position</div>
+
+      <div class="risk-calc">
+        <div class="rc-title">Gestion du Capital</div>
+        <div class="rc-grid">
+          <div class="rc-item"><div class="rc-label">CAPITAL</div><div class="rc-val" id="rc-capital">$—</div></div>
+          <div class="rc-item"><div class="rc-label">RISQUE %</div><div class="rc-val orange" id="rc-risk">—%</div></div>
+          <div class="rc-item"><div class="rc-label">MAX PERTE</div><div class="rc-val orange" id="rc-max-loss">$—</div></div>
+          <div class="rc-item"><div class="rc-label">TYPE LOT</div><div class="rc-val green" id="rc-lot-type">—</div></div>
+        </div>
+      </div>
+
+      <div class="sec">Règles Institutionnelles</div>
+      <div class="info-box" style="color:var(--green);border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.03);">
+        ✅ RÈGLES ACTIVES :<br>
+        · Stop Loss OBLIGATOIRE sur chaque trade<br>
+        · RR minimum 1:2 (refus si inférieur)<br>
+        · Max 1% du capital par position<br>
+        · Pas de revenge trading<br>
+        · Fermer si drawdown > 3% journalier<br>
+        · Jamais trader avant news rouge
+      </div>
+
+      <div class="sec">Sizing selon capital</div>
+      <div class="levels-block">
+        <div class="lb-head neutral">💵 Guide de position</div>
+        <div class="lrow"><span class="ll">$100 — $499</span><span class="lv b">Micro lot (0.01)</span></div>
+        <div class="lrow"><span class="ll">$500 — $999</span><span class="lv gold">Mini lot (0.05)</span></div>
+        <div class="lrow"><span class="ll">$1,000 — $4,999</span><span class="lv g">0.10 lot (1% risk)</span></div>
+        <div class="lrow"><span class="ll">$5,000+</span><span class="lv g">Calculé (1% risk)</span></div>
+      </div>
+
+      <div class="sec">Journal de Performance</div>
+      <div class="scores-grid">
+        <div class="sc"><div class="sv" id="perf-total" style="color:var(--blue)">0</div><div class="sl">SIGNAUX</div></div>
+        <div class="sc"><div class="sv" id="perf-buy" style="color:var(--green)">0</div><div class="sl">BUY</div></div>
+        <div class="sc"><div class="sv" id="perf-sell" style="color:var(--red)">0</div><div class="sl">SELL</div></div>
+        <div class="sc global"><div class="sv" id="perf-wait" style="color:var(--gold)">0</div><div class="sl">WAIT</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB 4 : JOURNAL ══ -->
+    <div class="page" id="page-4">
+      <div class="sec">Journal des Signaux</div>
+      <div id="history-list">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">Journal vide</div>
+          <div class="empty-sub">Tes signaux apparaîtront ici après génération</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM CTA -->
+  <div class="bottom-cta" id="bottom-cta">
+    <button class="btn btn-gold" id="gen-btn" onclick="generateSignal()">⬡ ANALYSER & GÉNÉRER LE SIGNAL</button>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ── STATE ── */
+let currentReport='';
+let confirmations={};
+let sessionSelected='';
+let aggressiveMode=false;
+let aggressiveInterval=null;
+let signalStats={total:0,buy:0,sell:0,wait:0};
+
+/* ── TABS ── */
+function goTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.getElementById('bottom-cta').style.display=(n===1)?'block':'none';
+  if(n===3)updateRiskCalc();
+}
+
+/* ── TICKER ── */
+function updateTicker(){
+  const p=document.getElementById('price').value;
+  if(p){
+    document.getElementById('ticker-price').textContent='$'+parseFloat(p).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('ticker-bar').style.animation='priceFlash 0.5s ease';
+    setTimeout(()=>document.getElementById('ticker-bar').style.animation='',500);
+  }
+  if(sessionSelected)document.getElementById('t-session').textContent=sessionSelected.toUpperCase().slice(0,2);
+}
+
+/* ── SESSION ── */
+function selectSession(s){
+  sessionSelected=s;
+  document.querySelectorAll('.sess-badge').forEach(b=>b.classList.remove('active'));
+  const key='sess-'+s.replace(' ','');
+  const el=document.getElementById(key);
+  if(el)el.classList.add('active');
+  document.getElementById('session').value=s;
+  document.getElementById('t-session').textContent=s.slice(0,2).toUpperCase();
+}
+
+/* ── CONFIRMATIONS ── */
+function toggleConfirm(el,key){
+  el.classList.toggle('checked');
+  confirmations[key]=el.classList.contains('checked');
+  updateConfirmCounter();
+}
+
+function updateConfirmCounter(){
+  const total=Object.values(confirmations).filter(v=>v).length;
+  const max=7;
+  const pct=Math.min(100,(total/max)*100);
+  const el=document.getElementById('cc-val');
+  const fill=document.getElementById('cc-fill');
+  el.textContent=total+'/'+max;
+  fill.style.width=pct+'%';
+  if(total>=max){
+    el.classList.add('ready');
+    fill.classList.add('ready');
+    toast('✅ '+total+' confirmations — Signal autorisé !','ok');
+  }else{
+    el.classList.remove('ready');
+    fill.classList.remove('ready');
+  }
+}
+
+/* ── NEWS RISK CHECK ── */
+function checkNewsRisk(){
+  const v=document.getElementById('news-risk').value;
+  const warn=document.getElementById('news-warn');
+  if(v==='red'){
+    warn.classList.add('show');
+    toast('⛔ NEWS ROUGE — Signal bloqué !','err');
+  }else{
+    warn.classList.remove('show');
+  }
+}
+
+/* ── AGGRESSIVE MODE ── */
+function toggleAggressive(){
+  aggressiveMode=!aggressiveMode;
+  const toggle=document.getElementById('aggr-toggle');
+  toggle.classList.toggle('on',aggressiveMode);
+  if(aggressiveMode){
+    toast('🔴 MODE AGRESSIF ACTIVÉ — Scanner 30s','warn');
+    aggressiveInterval=setInterval(()=>{
+      const sess=document.getElementById('session').value;
+      if(sess==='London'||sess==='New York'||sess==='Overlap'){
+        toast('⚡ Scan automatique en cours...','info');
+      }
+    },30000);
+  }else{
+    clearInterval(aggressiveInterval);
+    toast('Mode agressif désactivé','info');
+  }
+}
+
+/* ── RISK CALCULATOR ── */
+function updateRiskCalc(){
+  const cap=parseFloat(document.getElementById('capital').value)||1000;
+  const riskPct=parseFloat(document.getElementById('risk-pct').value)||1;
+  const maxLoss=cap*(riskPct/100);
+  let lotType='MICRO (0.01)';
+  if(cap>=5000)lotType='CALCULÉ';
+  else if(cap>=1000)lotType='0.10 LOT';
+  else if(cap>=500)lotType='MINI (0.05)';
+  document.getElementById('rc-capital').textContent='$'+cap.toLocaleString();
+  document.getElementById('rc-risk').textContent=riskPct+'%';
+  document.getElementById('rc-max-loss').textContent='$'+maxLoss.toFixed(2);
+  document.getElementById('rc-lot-type').textContent=lotType;
+}
+
+/* ── TELEGRAM TEST ── */
+async function testTelegram(){
+  const token=document.getElementById('bot-token').value.trim();
+  const chatId=document.getElementById('chat-id').value.trim();
+  if(!token||!chatId){toast('Remplis Token et Chat ID','err');return;}
+  toast('Test connexion...','info');
+  try{
+    const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:chatId,text:'🤖 *XAUUSD PRIME — Hedge Fund AI*\n\n✅ Connexion établie !\nTon bot est prêt à recevoir les signaux institutionnels 🥇\n\n_Niveau : Hedge Fund · Filtrage : 7 confirmations_',parse_mode:'Markdown'})
+    });
+    const d=await r.json();
+    if(d.ok){
+      document.getElementById('tg-dot').classList.add('live');
+      document.getElementById('tg-label').textContent='LIVE';
+      document.getElementById('tg-status-pill').classList.add('active');
+      toast('✅ Telegram connecté !','ok');
+    }else{toast('Erreur : '+(d.description||'Token invalide'),'err');}
+  }catch(e){toast('Erreur réseau','err');}
+}
+
+/* ── GENERATE SIGNAL ── */
+async function generateSignal(){
+  const newsRisk=document.getElementById('news-risk').value;
+  if(newsRisk==='red'){toast('⛔ BLOQUÉ — News rouge imminente !','err');return;}
+
+  const groqKey=document.getElementById('groq-key').value.trim();
+  if(!groqKey){toast('Entre ta clé Groq dans ⚙️ CONFIG','err');goTab(0);return;}
+
+  const price=document.getElementById('price').value;
+  if(!price){toast('Entre le prix Gold','err');return;}
+  if(!sessionSelected){toast('Sélectionne une session','err');return;}
+
+  const confirmsCount=Object.values(confirmations).filter(v=>v).length;
+  if(confirmsCount<4){toast('Minimum 4 confirmations SMC requises ('+confirmsCount+'/7)','warn');return;}
+
+  const atr=document.getElementById('atr').value;
+  if(atr==='extreme'){toast('⛔ BLOQUÉ — Volatilité extrême !','err');return;}
+
+  goTab(2);
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('result-area').style.display='none';
+  document.getElementById('loader').classList.add('on');
+  document.getElementById('gen-btn').disabled=true;
+
+  const steps=[
+    'Analyse Smart Money Concepts...',
+    'Scan multi-timeframe M1→D1...',
+    'Vérification news & fondamentaux...',
+    'Calcul niveaux institutionnels...',
+    'Filtrage 7 confirmations...',
+    'Évaluation Risk/Reward...',
+    'Génération signal premium...'
+  ];
+  const sl=document.getElementById('loader-steps');sl.innerHTML='';
+  steps.forEach((s,i)=>{
+    const el=document.createElement('div');
+    el.className='lstep';el.textContent=s;
+    el.style.animationDelay=(i*0.5)+'s';sl.appendChild(el);
+  });
+
+  const rsiZone=document.getElementById('rsi-zone').value;
+  const macd=document.getElementById('macd').value;
+  const vwap=document.getElementById('vwap').value;
+  const emaStack=document.getElementById('ema-stack').value;
+  const dxy=document.getElementById('dxy').value;
+  const fed=document.getElementById('fed').value;
+  const sentiment=document.getElementById('risk-sentiment').value;
+  const support=document.getElementById('support').value;
+  const resistance=document.getElementById('resistance').value;
+  const entryZone=document.getElementById('entry-zone').value;
+  const capital=document.getElementById('capital').value||1000;
+  const riskPct=document.getElementById('risk-pct').value||1;
+  const horizon=document.getElementById('horizon-pref').value;
+
+  const smcConfirms=Object.entries(confirmations).filter(([k,v])=>v).map(([k])=>k).join(', ');
+
+  const prompt=`Tu es une IA de trading institutionnelle niveau hedge fund, spécialisée sur XAUUSD (Gold). Tu analyses avec une précision chirurgicale et n'autorises un signal que si toutes les conditions sont réunies.
+
+DONNÉES MARCHÉ:
+Prix XAU/USD: $${price}
+Session: ${sessionSelected}
+RSI: ${rsiZone}
+MACD: ${macd}
+VWAP: ${vwap}
+EMA Stack: ${emaStack}
+ATR: ${atr}
+DXY: ${dxy}
+Fed: ${fed}
+Sentiment Risk: ${sentiment}
+News risk: ${newsRisk}
+Support HTF: $${support}
+Résistance HTF: $${resistance}
+Zone entrée visée: $${entryZone||'calculer'}
+Confirmations SMC actives: ${smcConfirms} (${confirmsCount}/7)
+Capital: $${capital} | Risque: ${riskPct}%
+Horizon préféré: ${horizon}
+
+MISSION: Analyser ces données avec la rigueur d'un hedge fund. Générer un signal SEULEMENT si:
+1. RR >= 1:2 garanti
+2. Probabilité entre 65-90%
+3. Confluences multiples confirmées
+4. News compatible
+5. Structure de marché claire
+
+Réponds UNIQUEMENT avec un JSON valide sans texte avant ou après:
+{
+  "signal": "BUY|SELL|WAIT",
+  "biais": "HAUSSIER|BAISSIER|NEUTRE",
+  "confidence": 75,
+  "horizon": "SCALP|INTRADAY|SWING",
+  "entry_optimal": ${price},
+  "entry_low": number,
+  "entry_high": number,
+  "entry_aggressive": number,
+  "entry_conservative": number,
+  "sl": number,
+  "sl_tight": number,
+  "tp1": number,
+  "tp2": number,
+  "tp3": number,
+  "tp4": number,
+  "tp5": number,
+  "tp6": number,
+  "rr_tp1": "1:2",
+  "rr_tp2": "1:3",
+  "rr_tp3": "1:5",
+  "invalidation": number,
+  "tech_analysis": "Analyse technique SMC détaillée 4-5 lignes",
+  "fund_analysis": "Analyse fondamentale macro 3-4 lignes",
+  "risk_note": "Note de risque et gestion position",
+  "institutional_note": "Observation niveau hedge fund",
+  "score_tech": 8,
+  "score_smc": 7,
+  "score_fund": 8,
+  "score_global": 8,
+  "timing": "MAINTENANT|ATTENDRE CASSURE|ATTENDRE PULLBACK",
+  "lot_advice": "conseil sizing selon capital $${capital}",
+  "blockers": []
+}
+
+Prix cohérents avec $${price}. Si signal impossible (conditions non réunies), mettre WAIT avec explication dans blockers.`;
+
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'user',content:prompt}],
+        max_tokens:1200,
+        temperature:0.2
+      })
+    });
+    const data=await resp.json();
+    if(data.error){toast('Erreur Groq: '+data.error.message,'err');document.getElementById('empty-state').style.display='block';document.getElementById('loader').classList.remove('on');return;}
+    const raw=(data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
+    const r=JSON.parse(raw);
+    renderResult(r,price,capital,riskPct);
+  }catch(e){
+    toast('Erreur: '+e.message,'err');
+    document.getElementById('empty-state').style.display='block';
+    document.getElementById('loader').classList.remove('on');
+  }finally{
+    document.getElementById('gen-btn').disabled=false;
+  }
+}
+
+/* ── RENDER RESULT ── */
+function renderResult(r,price,capital,riskPct){
+  document.getElementById('loader').classList.remove('on');
+  document.getElementById('result-area').style.display='block';
+
+  const sw=document.getElementById('sh-signal');
+  sw.textContent=(r.signal==='BUY'?'▲ BUY':r.signal==='SELL'?'▼ SELL':'◆ WAIT');
+  sw.className='sh-signal '+r.signal;
+
+  document.getElementById('sh-conf').textContent=r.confidence+'%';
+  document.getElementById('t-conf').textContent=r.confidence+'%';
+  document.getElementById('t-rr').textContent=r.rr_tp1||'—';
+
+  // Tags
+  const tags=[
+    {t:r.biais,hl:false},
+    {t:r.horizon,hl:true},
+    {t:r.timing,hl:true},
+    {t:'RR '+r.rr_tp3,hl:false},
+  ];
+  document.getElementById('sh-meta').innerHTML=tags.map(t=>`<span class="sh-tag ${t.hl?'hl':''}">${t.t}</span>`).join('');
+
+  // Scores
+  document.getElementById('sc-tech').textContent=r.score_tech;
+  document.getElementById('sc-smc').textContent=r.score_smc;
+  document.getElementById('sc-fund').textContent=r.score_fund;
+  document.getElementById('sc-global').textContent=r.score_global;
+
+  // Warn if WAIT
+  const rw=document.getElementById('result-warn');
+  if(r.signal==='WAIT'&&r.blockers&&r.blockers.length>0){
+    rw.textContent='⛔ Signal bloqué : '+r.blockers.join(' | ');
+    rw.classList.add('show');
+  }else{rw.classList.remove('show');}
+
+  // Entry
+  document.getElementById('entry-levels').innerHTML=`
+    <div class="lrow"><span class="ll">Zone optimale</span><span class="lv gold">$${r.entry_low} — $${r.entry_high}</span></div>
+    <div class="lrow"><span class="ll">Entrée optimale</span><span class="lv gold">$${r.entry_optimal}</span></div>
+    <div class="lrow"><span class="ll">Agressive</span><span class="lv">$${r.entry_aggressive}</span></div>
+    <div class="lrow"><span class="ll">Conservative</span><span class="lv">$${r.entry_conservative}</span></div>`;
+
+  // SL
+  document.getElementById('sl-levels').innerHTML=`
+    <div class="lrow"><span class="ll">SL Serré (Scalp)</span><span class="lv r">$${r.sl_tight}</span></div>
+    <div class="lrow"><span class="ll">SL Normal (Swing)</span><span class="lv r">$${r.sl}</span></div>
+    <div class="lrow"><span class="ll">Invalidation HTF</span><span class="lv r">$${r.invalidation}</span></div>`;
+
+  // TP
+  document.getElementById('tp-levels').innerHTML=`
+    <div class="lrow"><span class="ll">TP1 · 30% · ${r.rr_tp1}</span><span class="lv g">$${r.tp1}</span></div>
+    <div class="lrow"><span class="ll">TP2 · 25% · ${r.rr_tp2}</span><span class="lv g">$${r.tp2}</span></div>
+    <div class="lrow"><span class="ll">TP3 · 20% · ${r.rr_tp3}</span><span class="lv g">$${r.tp3}</span></div>
+    <div class="lrow"><span class="ll">TP4 · 15%</span><span class="lv g">$${r.tp4}</span></div>
+    <div class="lrow"><span class="ll">TP5 · 7%</span><span class="lv g">$${r.tp5}</span></div>
+    <div class="lrow"><span class="ll">TP6 · 3% (Runner)</span><span class="lv g">$${r.tp6}</span></div>`;
+
+  document.getElementById('tech-text').textContent=r.tech_analysis;
+  document.getElementById('fund-text').textContent=r.fund_analysis;
+  document.getElementById('inval-text').textContent=r.risk_note;
+  document.getElementById('note-text').textContent=r.institutional_note;
+
+  const now=new Date().toLocaleString('fr-FR');
+  currentReport=buildTgMessage(r,price,now);
+
+  // Stats
+  signalStats.total++;
+  if(r.signal==='BUY')signalStats.buy++;
+  else if(r.signal==='SELL')signalStats.sell++;
+  else signalStats.wait++;
+  document.getElementById('perf-total').textContent=signalStats.total;
+  document.getElementById('perf-buy').textContent=signalStats.buy;
+  document.getElementById('perf-sell').textContent=signalStats.sell;
+  document.getElementById('perf-wait').textContent=signalStats.wait;
+
+  addHistory(r,price,now);
+  toast('Signal '+r.signal+' · Confiance '+r.confidence+'%',r.signal==='BUY'?'ok':r.signal==='SELL'?'err':'warn');
+}
+
+/* ── TELEGRAM MESSAGE ── */
+function buildTgMessage(r,price,time){
+  const em=r.signal==='BUY'?'🟢':r.signal==='SELL'?'🔴':'🟡';
+  const arr=r.signal==='BUY'?'▲':'▼';
+  return `🔔 *XAUUSD PREMIUM SIGNAL*
+━━━━━━━━━━━━━━━━━━
+${em} *Type :* ${arr} ${r.signal}
+💰 *Prix :* $${price}
+⏱️ *Durée :* ${r.horizon}
+
+📍 *Entrée :* $${r.entry_low} — $${r.entry_high}
+🎯 *Optimal :* $${r.entry_optimal}
+
+🛡️ *SL :* $${r.sl_tight} (serré) / $${r.sl} (swing)
+
+🚀 *Objectifs :*
+• TP1 : $${r.tp1} → RR ${r.rr_tp1}
+• TP2 : $${r.tp2} → RR ${r.rr_tp2}
+• TP3 : $${r.tp3} → RR ${r.rr_tp3}
+• TP4 : $${r.tp4}
+• TP5 : $${r.tp5}
+• TP6 : $${r.tp6} _(runner)_
+
+━━━━━━━━━━━━━━━━━━
+🎯 *Confiance :* ${r.confidence}%
+📊 *Score Global :* ${r.score_global}/10
+⚡ *Timing :* ${r.timing}
+
+📈 *Technique :* ${r.tech_analysis}
+
+🌍 *Macro :* ${r.fund_analysis}
+
+⚠️ *Invalidation :* $${r.invalidation}
+💡 *Note :* ${r.institutional_note}
+
+━━━━━━━━━━━━━━━━━━
+🏦 *Raison :* Confluence institutionnelle validée
+_${time} · Hedge Fund AI · Pas un conseil financier_`;
+}
+
+/* ── SEND TELEGRAM ── */
+async function sendToTelegram(){
+  const token=document.getElementById('bot-token').value.trim();
+  const chatId=document.getElementById('chat-id').value.trim();
+  if(!token||!chatId){toast('Configure Telegram dans ⚙️ CONFIG','err');return;}
+  if(!currentReport){toast('Génère d\'abord un signal','err');return;}
+  try{
+    const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:chatId,text:currentReport,parse_mode:'Markdown'})
+    });
+    const d=await r.json();
+    if(d.ok){toast('✅ Signal envoyé sur Telegram !','ok');}
+    else{toast('Erreur: '+d.description,'err');}
+  }catch(e){toast('Erreur réseau','err');}
+}
+
+function copyReport(){
+  if(!currentReport){toast('Génère d\'abord un signal','err');return;}
+  navigator.clipboard.writeText(currentReport);
+  toast('Rapport copié !','ok');
+}
+
+/* ── HISTORY ── */
+function addHistory(r,price,time){
+  const list=document.getElementById('history-list');
+  const empty=list.querySelector('.empty-state');
+  if(empty)empty.remove();
+  const el=document.createElement('div');
+  const sig=r.signal.toLowerCase();
+  el.className='hist-item '+sig;
+  el.innerHTML=`
+    <div class="hi-row">
+      <span class="hi-sig ${sig}">${r.signal==='BUY'?'▲':r.signal==='SELL'?'▼':'◆'} ${r.signal}</span>
+      <span class="hi-conf">${r.confidence}% · ${r.score_global}/10</span>
+    </div>
+    <div class="hi-meta">$${price} · ${r.horizon} · ${r.rr_tp3} · ${time.split(',')[1]?.trim()||time}</div>`;
+  list.insertBefore(el,list.firstChild);
+}
+
+/* ── TOAST ── */
+function toast(msg,type='info'){
+  const wrap=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className='toast '+type;el.textContent=msg;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// Init
+updateRiskCalc();
+document.getElementById('capital').addEventListener('input',updateRiskCalc);
+document.getElementById('risk-pct').addEventListener('change',updateRiskCalc);
+</script>
+</body>
+</html>
