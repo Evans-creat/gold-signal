@@ -689,7 +689,7 @@ Réponds UNIQUEMENT avec un JSON valide sans texte avant ou après:
 }
 
 /* ── GENERATE SIGNAL ── */
-async function generateSignal(){
+async function generateSignal(){await fetchMarketData();
   const groqKey=document.getElementById('groq-key').value.trim();
   if(!groqKey){toast('Entre ta clé Groq dans ⚙️ Config','err');goTab(0);return;}
 
@@ -881,6 +881,57 @@ function toast(msg,type='info'){
   el.className='toast '+type;el.textContent=msg;
   wrap.appendChild(el);
   setTimeout(()=>el.remove(),3000);
+}/* ───────── REAL MARKET DATA ───────── */
+
+async function fetchMarketData(){
+
+  const apiKey=document.getElementById('twelve-key').value.trim();
+
+  if(!apiKey){
+    toast('Entre la clé Twelve Data','err');
+    return;
+  }
+
+  try{
+
+    let symbol='XAU/USD';
+    let inputId='gold-price';
+
+    if(currentMarket==='btc'){
+      symbol='BTC/USD';
+      inputId='btc-price';
+    }
+
+    if(currentMarket==='eth'){
+      symbol='ETH/USD';
+      inputId='eth-price';
+    }
+
+    if(currentMarket==='forex'){
+      symbol='EUR/USD';
+      inputId='forex-price';
+    }
+
+    toast('Connexion marché réel...','info');
+
+    const r=await fetch(
+      `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${apiKey}`
+    );
+
+    const data=await r.json();
+
+    if(data.status==='error'){
+      toast(data.message,'err');
+      return;
+    }
+
+    document.getElementById(inputId).value=data.price;
+
+    toast('Marché mis à jour ✅','ok');
+
+  }catch(e){
+    toast('Erreur API marché','err');
+  }
 }
 </script>
 </body>
