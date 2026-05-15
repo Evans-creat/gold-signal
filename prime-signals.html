@@ -1,5 +1,5 @@
-            
-  <!DOCTYPE html>
+          
+          <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -142,10 +142,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBra
     <!-- CONFIG -->
     <div class="page active" id="page-0">
       <div class="sec">Clés API</div>
-      <div class="field"><label>📊 TwelveData API Key</label><input type="password" id="td-key" placeholder="Clé TwelveData..." autocomplete="off"/></div>
-      <div class="field"><label>🔑 Groq API Key</label><input type="password" id="groq-key" placeholder="gsk_..." autocomplete="off"/></div>
+      <div class="field"><label>📊 TwelveData API Key</label><input type="text" id="td-key" placeholder="Clé TwelveData..." autocomplete="off" style="font-size:11px;"/></div>
+      <div class="field"><label>🔑 Groq API Key</label><input type="text" id="groq-key" placeholder="gsk_..." autocomplete="off" style="font-size:11px;"/></div>
       <div class="sec">Telegram</div>
-      <div class="field"><label>🤖 Bot Token</label><input type="password" id="bot-token" placeholder="123456:ABC-DEF..." autocomplete="off"/></div>
+      <div class="field"><label>🤖 Bot Token</label><input type="text" id="bot-token" placeholder="123456:ABC-DEF..." autocomplete="off" style="font-size:11px;"/></div>
       <div class="field"><label>💬 Chat ID</label><input type="text" id="chat-id" placeholder="8659145987"/></div>
       <button class="btn btn-tg" onclick="testTelegram()">▶ TESTER LA CONNEXION</button>
       <div class="sec">Comment utiliser</div>
@@ -317,6 +317,7 @@ function goTab(n){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
   document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));
   document.getElementById('bottom-cta').style.display=(n===1)?'block':'none';
+  window.scrollTo(0,0);
 }
 
 function selectMarket(m,btn){
@@ -367,8 +368,8 @@ async function fetchData(){
   try{
     const sym=mkt==='forex'?pair:SYMS[mkt];
     const url=`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${tf}&outputsize=50&apikey=${tdKey}`;
-    const res=await fetch(url);
-    const d=await res.json();
+    const fetchRes=await fetch(url);
+    const d=await fetchRes.json();
 
     if(d.status==='error'){toast('Erreur: '+d.message,'err');document.getElementById('status-txt').textContent='❌ Erreur API';return;}
 
@@ -389,7 +390,7 @@ async function fetchData(){
     const highs=candles.slice(0,20).map(c=>parseFloat(c.high));
     const lows=candles.slice(0,20).map(c=>parseFloat(c.low));
     const sup=Math.min(...lows);
-    const res=Math.max(...highs);
+    const resistance=Math.max(...highs);
     const atr=calcATR(candles.slice(0,15));
 
     let emaTrend=price>ema20&&ema20>ema50?'↑ Bull':price<ema20&&ema20<ema50?'↓ Bear':'→ Neutre';
@@ -401,7 +402,7 @@ async function fetchData(){
     document.getElementById('h-ema').value=emaTrend;
     document.getElementById('h-macd').value=macdSig;
     document.getElementById('h-sup').value=sup.toFixed(mkt==='forex'?5:2);
-    document.getElementById('h-res').value=res.toFixed(mkt==='forex'?5:2);
+    document.getElementById('h-res').value=resistance.toFixed(mkt==='forex'?5:2);
     document.getElementById('h-atr').value=atr.toFixed(mkt==='forex'?5:2);
     document.getElementById('h-session').value=sess;
 
@@ -420,7 +421,7 @@ async function fetchData(){
     document.getElementById('live-macd').textContent=macdSig.split(' ')[0];
     document.getElementById('live-macd').style.color=macdSig.includes('↑')?'var(--green)':macdSig.includes('↓')?'var(--red)':'var(--muted)';
     document.getElementById('live-sup').textContent=fmtP(sup);
-    document.getElementById('live-res').textContent=fmtP(res);
+    document.getElementById('live-res').textContent=fmtP(resistance);
     document.getElementById('live-atr').textContent=atr.toFixed(mkt==='forex'?5:2);
     document.getElementById('live-session').textContent=sess.toUpperCase();
     document.getElementById('live-time').textContent=new Date().toLocaleTimeString('fr-FR');
