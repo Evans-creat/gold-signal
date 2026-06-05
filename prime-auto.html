@@ -262,7 +262,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBra
           <option value="2">2% — Agressif</option>
         </select>
       </div>
-      <div class="info-box">✅ Config auto-sauvegardée · ✅ SMC+MTF+DXY · ✅ Scanner auto · ✅ Filtre news · ✅ Apprentissage IA</div>
+      <div class="info-box">✅ Config auto-sauvegardée · ✅ SMC+MTF+DXY · ✅ Scanner auto · ✅ Filtre news · ✅ Apprentissage IA · ✅ Auto-vérification TP/SL</div>
     </div>
 
     <!-- MARCHÉ -->
@@ -751,10 +751,12 @@ function renderResult(r,price,cap,risk){
   perfStats.total++;if(r.signal==='BUY')perfStats.buy++;else if(r.signal==='SELL')perfStats.sell++;else perfStats.wait++;
   perfStats.scores.push(r.score_global);updatePerf();
   var id=Date.now().toString();
-  var fb={id:id,signal:r.signal,pair:pair,tf:tf,session:document.getElementById('h-sess').value,market:mkt,conf:parseInt(conf),score:r.score_global,time:now,result:null};
+  var fb={id:id,signal:r.signal,pair:pair,tf:tf,session:document.getElementById('h-sess').value,market:mkt,conf:parseInt(conf),score:r.score_global,time:now,result:null,entry_low:r.entry_low,entry_high:r.entry_high,sl:r.sl_swing,tp1:r.tp1,tp2:r.tp2,tp3:r.tp3,price:price,tech:r.tech,horizon:r.horizon};
   feedbackData.unshift(fb);
   if(feedbackData.length>100)feedbackData.pop();
   saveFeedback();
+  // Also save last signal for display restoration
+  localStorage.setItem('pav5LastSignal',JSON.stringify({r:r,price:price,cap:cap,risk:risk,conf:conf,pair:pair,mkt:mkt,tf:tf,now:now}));
   addHistoryCard(fb,mktE);
   updateLearning();
   toast('Signal '+r.signal+' · Score '+r.score_global+'/10 · '+conf+'%',r.signal==='BUY'?'ok':r.signal==='SELL'?'err':'info');
@@ -840,7 +842,77 @@ function resetLearning(){
   updateLearning();toast('🗑️ Apprentissage réinitialisé','info');
 }
 
-// ── PERF ──
+// ── AUTO-VERIFICATION DES SIGNAUX ──
+var verificationInterval = null;
+
+function startAutoVerification() {
+  if (verificationInterval) clearInterval(verificationInterval);
+  verificationInterval = setInterval(function() {
+    verifyOpenSignals();
+  }, 30 * 60 * 1000); // toutes les 30 minutes
+  // Vérification immédiate au démarrage
+  setTimeout(verifyOpenSignals, 5000);
+}
+
+function verifyOpenSignals() {
+  var tdKey = document.getElementById('td-key').value.trim();
+  if (!tdKey) return;
+  // Trouver tous les signaux non encore notés
+  var openSignals = feedbackData.filter(function(f) {
+    return !f.result && f.entry_low && f.sl && f.tp1;
+  });
+  if (openSignals.length === 0) return;
+  openSignals.forEach(function(sig) {
+    var symbol = sig.pair;
+    var url = 'https://api.twelvedata.com/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + tdKey;
+    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+      if (!data.price) return;
+      var currentPrice = parseFloat(data.price);
+      var result = null;
+      var message = '';
+      if (sig.signal === 'BUY') {
+        if (currentPrice >= parseFloat(sig.tp1)) {
+          result = 'win';
+          message = '✅ TP1 ATTEINT — ' + sig.pair + ' BUY\nEntrée: ' + sig.entry_low + '\nTP1: ' + sig.tp1 + '\nPrix actuel: ' + currentPrice.toFixed(2);
+        } else if (currentPrice <= parseFloat(sig.sl)) {
+          result = 'loss';
+          message = '❌ STOP LOSS TOUCHÉ — ' + sig.pair + ' BUY\nEntrée: ' + sig.entry_low + '\nSL: ' + sig.sl + '\nPrix actuel: ' + currentPrice.toFixed(2);
+        }
+      } else if (sig.signal === 'SELL') {
+        if (currentPrice <= parseFloat(sig.tp1)) {
+          result = 'win';
+          message = '✅ TP1 ATTEINT — ' + sig.pair + ' SELL\nEntrée: ' + sig.entry_high + '\nTP1: ' + sig.tp1 + '\nPrix actuel: ' + currentPrice.toFixed(2);
+        } else if (currentPrice >= parseFloat(sig.sl)) {
+          result = 'loss';
+          message = '❌ STOP LOSS TOUCHÉ — ' + sig.pair + ' SELL\nEntrée: ' + sig.entry_high + '\nSL: ' + sig.sl + '\nPrix actuel: ' + currentPrice.toFixed(2);
+        }
+      }
+      if (result) {
+        // Mettre à jour le feedback automatiquement
+        submitFeedback(sig.id, result);
+        // Envoyer alerte Telegram
+        var token = document.getElementById('bot-token').value.trim();
+        var chatId = document.getElementById('chat-id').value.trim();
+        if (token && chatId) {
+          var fullMsg = (result === 'win' ? '✅' : '❌') + ' *PRIME AUTO v5 — AUTO-VÉRIFICATION*\n\n' + message + '\n\n🧠 Signal mis à jour automatiquement\n_Prime Auto v5_';
+          fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({chat_id: chatId, text: fullMsg, parse_mode: 'Markdown'})
+          });
+        }
+        toast((result === 'win' ? '✅ TP atteint !' : '❌ SL touché !') + ' — ' + sig.pair, result === 'win' ? 'ok' : 'err');
+      }
+    }).catch(function() {});
+  });
+}
+
+function stopAutoVerification() {
+  if (verificationInterval) {
+    clearInterval(verificationInterval);
+    verificationInterval = null;
+  }
+}
 function updatePerf(){
   document.getElementById('p-total').textContent=perfStats.total;
   document.getElementById('p-buy').textContent=perfStats.buy;
@@ -916,6 +988,18 @@ function toast(msg,type){
 // ── INIT ──
 window.addEventListener('load',function(){
   loadConfig();loadFeedback();updatePerf();
+  startAutoVerification();
+  // Restore last signal
+  try{
+    var lastSig=JSON.parse(localStorage.getItem('pav5LastSignal')||'null');
+    if(lastSig){
+      mkt=lastSig.mkt||'gold';pair=lastSig.pair||'XAU/USD';tf=lastSig.tf||'15min';
+      document.getElementById('h-conf').value=lastSig.conf||0;
+      document.getElementById('h-sess').value='';
+      renderResult(lastSig.r,lastSig.price,lastSig.cap,lastSig.risk);
+      toast('📋 Dernier signal restauré !','info');
+    }
+  }catch(e){}
   // Restore feedback UI
   feedbackData.forEach(function(fb){
     var mktE={gold:'🥇',btc:'₿',eth:'⬡',forex:'💱',synth:'🎰'}[fb.market]||'📊';
