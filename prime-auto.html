@@ -687,8 +687,17 @@ function generateSignal(autoMode){
   var learnWarn=getLearningWarning();
   if(learnWarn)toast('🧠 '+learnWarn,'warn');
 
-  goTab(2);
-  document.getElementById('empty-state').style.display='none';
+  // ── FILTRE QUALITÉ ──
+  var qf = qualityFilter();
+  if (qf.blocked) {
+    var msg = '⛔ Signal bloqué par le filtre qualité :\n' + qf.reasons.join('\n');
+    toast('⛔ Signal bloqué !', 'err');
+    alert(msg + '\n\nL\'app protège ton capital !');
+    return;
+  }
+  if (qf.warned) {
+    toast('⚠️ ' + qf.reasons[0], 'warn');
+  }
   document.getElementById('result-area').style.display='none';
   document.getElementById('loader').classList.add('on');
   document.getElementById('gen-btn').disabled=true;
@@ -847,71 +856,105 @@ var verificationInterval = null;
 
 function startAutoVerification() {
   if (verificationInterval) clearInterval(verificationInterval);
-  verificationInterval = setInterval(function() {
-    verifyOpenSignals();
-  }, 30 * 60 * 1000); // toutes les 30 minutes
-  // Vérification immédiate au démarrage
+  verificationInterval = setInterval(verifyOpenSignals, 15 * 60 * 1000);
   setTimeout(verifyOpenSignals, 5000);
+}
+
+function sendTGAlert(message) {
+  var token = document.getElementById('bot-token').value.trim();
+  var chatId = document.getElementById('chat-id').value.trim();
+  if (!token || !chatId) return;
+  fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({chat_id: chatId, text: message + '\n\n_Prime Auto v5_', parse_mode: 'Markdown'})
+  });
 }
 
 function verifyOpenSignals() {
   var tdKey = document.getElementById('td-key').value.trim();
   if (!tdKey) return;
-  // Trouver tous les signaux non encore notés
   var openSignals = feedbackData.filter(function(f) {
     return !f.result && f.entry_low && f.sl && f.tp1;
   });
   if (openSignals.length === 0) return;
   openSignals.forEach(function(sig) {
-    var symbol = sig.pair;
-    var url = 'https://api.twelvedata.com/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + tdKey;
-    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+    fetch('https://api.twelvedata.com/price?symbol=' + encodeURIComponent(sig.pair) + '&apikey=' + tdKey)
+    .then(function(r) { return r.json(); }).then(function(data) {
       if (!data.price) return;
-      var currentPrice = parseFloat(data.price);
+      var p = parseFloat(data.price);
       var result = null;
-      var message = '';
-      if (sig.signal === 'BUY') {
-        if (currentPrice >= parseFloat(sig.tp1)) {
-          result = 'win';
-          message = '✅ TP1 ATTEINT — ' + sig.pair + ' BUY\nEntrée: ' + sig.entry_low + '\nTP1: ' + sig.tp1 + '\nPrix actuel: ' + currentPrice.toFixed(2);
-        } else if (currentPrice <= parseFloat(sig.sl)) {
-          result = 'loss';
-          message = '❌ STOP LOSS TOUCHÉ — ' + sig.pair + ' BUY\nEntrée: ' + sig.entry_low + '\nSL: ' + sig.sl + '\nPrix actuel: ' + currentPrice.toFixed(2);
+      var tgMsg = '';
+      var isBuy = sig.signal === 'BUY';
+      var entry = isBuy ? sig.entry_low : sig.entry_high;
+
+      if (isBuy) {
+        if (sig.tp3 && p >= parseFloat(sig.tp3) && !sig.tp3Hit) {
+          sig.tp3Hit = true; saveFeedback();
+          tgMsg = '💎 *TP3 ATTEINT !* — ' + sig.pair + ' BUY\n📍 Entrée: ' + entry + '\n🚀 TP3: ' + sig.tp3 + '\n💰 Prix: ' + p.toFixed(2) + '\n\n🎉 Ferme tout ! Excellent trade !';
+          result = 'win'; toast('💎 TP3 ATTEINT ! ' + sig.pair, 'ok');
+        } else if (sig.tp2 && p >= parseFloat(sig.tp2) && !sig.tp2Hit) {
+          sig.tp2Hit = true; saveFeedback();
+          tgMsg = '🎯 *TP2 ATTEINT !* — ' + sig.pair + ' BUY\n📍 Entrée: ' + entry + '\n🚀 TP2: ' + sig.tp2 + '\n💰 Prix: ' + p.toFixed(2) + '\n\n⚡ Ferme 30% · Move SL breakeven · Attends TP3: ' + sig.tp3;
+          toast('🎯 TP2 ATTEINT ! ' + sig.pair, 'ok');
+        } else if (p >= parseFloat(sig.tp1) && !sig.tp1Hit) {
+          sig.tp1Hit = true; saveFeedback();
+          tgMsg = '✅ *TP1 ATTEINT !* — ' + sig.pair + ' BUY\n📍 Entrée: ' + entry + '\n🚀 TP1: ' + sig.tp1 + '\n💰 Prix: ' + p.toFixed(2) + '\n\n⚡ Ferme 50% · Move SL breakeven · Attends TP2: ' + sig.tp2;
+          toast('✅ TP1 ATTEINT ! ' + sig.pair, 'ok');
+        } else if (p <= parseFloat(sig.sl) && !sig.slHit) {
+          sig.slHit = true; result = 'loss';
+          tgMsg = '❌ *STOP LOSS TOUCHÉ* — ' + sig.pair + ' BUY\n📍 Entrée: ' + entry + '\n🛡️ SL: ' + sig.sl + '\n💰 Prix: ' + p.toFixed(2) + '\n\n🧠 L\'app apprend de cette perte.';
+          toast('❌ SL touché — ' + sig.pair, 'err');
         }
       } else if (sig.signal === 'SELL') {
-        if (currentPrice <= parseFloat(sig.tp1)) {
-          result = 'win';
-          message = '✅ TP1 ATTEINT — ' + sig.pair + ' SELL\nEntrée: ' + sig.entry_high + '\nTP1: ' + sig.tp1 + '\nPrix actuel: ' + currentPrice.toFixed(2);
-        } else if (currentPrice >= parseFloat(sig.sl)) {
-          result = 'loss';
-          message = '❌ STOP LOSS TOUCHÉ — ' + sig.pair + ' SELL\nEntrée: ' + sig.entry_high + '\nSL: ' + sig.sl + '\nPrix actuel: ' + currentPrice.toFixed(2);
+        if (sig.tp3 && p <= parseFloat(sig.tp3) && !sig.tp3Hit) {
+          sig.tp3Hit = true; saveFeedback();
+          tgMsg = '💎 *TP3 ATTEINT !* — ' + sig.pair + ' SELL\n📍 Entrée: ' + entry + '\n🚀 TP3: ' + sig.tp3 + '\n💰 Prix: ' + p.toFixed(2) + '\n\n🎉 Ferme tout ! Excellent trade !';
+          result = 'win'; toast('💎 TP3 ATTEINT ! ' + sig.pair, 'ok');
+        } else if (sig.tp2 && p <= parseFloat(sig.tp2) && !sig.tp2Hit) {
+          sig.tp2Hit = true; saveFeedback();
+          tgMsg = '🎯 *TP2 ATTEINT !* — ' + sig.pair + ' SELL\n📍 Entrée: ' + entry + '\n🚀 TP2: ' + sig.tp2 + '\n💰 Prix: ' + p.toFixed(2) + '\n\n⚡ Ferme 30% · Move SL breakeven · Attends TP3: ' + sig.tp3;
+          toast('🎯 TP2 ATTEINT ! ' + sig.pair, 'ok');
+        } else if (p <= parseFloat(sig.tp1) && !sig.tp1Hit) {
+          sig.tp1Hit = true; saveFeedback();
+          tgMsg = '✅ *TP1 ATTEINT !* — ' + sig.pair + ' SELL\n📍 Entrée: ' + entry + '\n🚀 TP1: ' + sig.tp1 + '\n💰 Prix: ' + p.toFixed(2) + '\n\n⚡ Ferme 50% · Move SL breakeven · Attends TP2: ' + sig.tp2;
+          toast('✅ TP1 ATTEINT ! ' + sig.pair, 'ok');
+        } else if (p >= parseFloat(sig.sl) && !sig.slHit) {
+          sig.slHit = true; result = 'loss';
+          tgMsg = '❌ *STOP LOSS TOUCHÉ* — ' + sig.pair + ' SELL\n📍 Entrée: ' + entry + '\n🛡️ SL: ' + sig.sl + '\n💰 Prix: ' + p.toFixed(2) + '\n\n🧠 L\'app apprend de cette perte.';
+          toast('❌ SL touché — ' + sig.pair, 'err');
         }
       }
-      if (result) {
-        // Mettre à jour le feedback automatiquement
-        submitFeedback(sig.id, result);
-        // Envoyer alerte Telegram
-        var token = document.getElementById('bot-token').value.trim();
-        var chatId = document.getElementById('chat-id').value.trim();
-        if (token && chatId) {
-          var fullMsg = (result === 'win' ? '✅' : '❌') + ' *PRIME AUTO v5 — AUTO-VÉRIFICATION*\n\n' + message + '\n\n🧠 Signal mis à jour automatiquement\n_Prime Auto v5_';
-          fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({chat_id: chatId, text: fullMsg, parse_mode: 'Markdown'})
-          });
-        }
-        toast((result === 'win' ? '✅ TP atteint !' : '❌ SL touché !') + ' — ' + sig.pair, result === 'win' ? 'ok' : 'err');
-      }
+      if (tgMsg) sendTGAlert(tgMsg);
+      if (result) submitFeedback(sig.id, result);
     }).catch(function() {});
   });
 }
 
-function stopAutoVerification() {
-  if (verificationInterval) {
-    clearInterval(verificationInterval);
-    verificationInterval = null;
+// ── FILTRE QUALITÉ AUTOMATIQUE ──
+function qualityFilter() {
+  var rated = feedbackData.filter(function(f) { return f.result; });
+  if (rated.length < 5) return {blocked: false, warned: false, reasons: []};
+  var sess = getSession();
+  var conf = parseInt(document.getElementById('h-conf').value) || 0;
+  var reasons = [];
+  var sessData = rated.filter(function(f) { return f.session === sess; });
+  var sessWR = sessData.length > 0 ? (sessData.filter(function(f){return f.result==='win';}).length / sessData.length) * 100 : 100;
+  if (sessData.length >= 3 && sessWR < 40) reasons.push('Session ' + sess + ' : win rate ' + Math.round(sessWR) + '%');
+  var tfData = rated.filter(function(f) { return f.tf === tf; });
+  var tfWR = tfData.length > 0 ? (tfData.filter(function(f){return f.result==='win';}).length / tfData.length) * 100 : 100;
+  if (tfData.length >= 3 && tfWR < 40) reasons.push('TF ' + tf + ' : win rate ' + Math.round(tfWR) + '%');
+  var winConfs = rated.filter(function(f){return f.result==='win'&&f.conf;}).map(function(f){return f.conf;});
+  if (winConfs.length >= 3) {
+    var avgConf = winConfs.reduce(function(a,b){return a+b;},0) / winConfs.length;
+    if (conf < avgConf - 10) reasons.push('Confiance ' + conf + '% < optimal ' + Math.round(avgConf) + '%');
   }
+  if (sess === 'Overlap') reasons.push('Session Overlap — Risque manipulation');
+  return {blocked: reasons.length >= 2, warned: reasons.length === 1, reasons: reasons};
+}
+
+function stopAutoVerification() {
+  if (verificationInterval) { clearInterval(verificationInterval); verificationInterval = null; }
 }
 function updatePerf(){
   document.getElementById('p-total').textContent=perfStats.total;
